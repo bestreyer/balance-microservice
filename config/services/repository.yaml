@@ -1,0 +1,15 @@
+services:
+    app.repository.abstract:
+        class: App\Repository\AbstractRepository
+        abstract: true
+        arguments:
+            - "@app.db.client"
+
+    app.repository.balance:
+        class: App\Repository\BalanceRepository
+        parent: "app.repository.abstract"
+
+    app.repository.balance_lock:
+        class: App\Repository\BalanceLockRepository
+        parent: "app.repository.abstract"
+        public: true

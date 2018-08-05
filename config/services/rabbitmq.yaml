@@ -1,0 +1,39 @@
+services:
+    app.rabbitmq.connection:
+        class: App\RabbitMQ\RabbitMQConnectionManager
+        arguments:
+            - "@app.loop"
+            - {'host': '%env(RABBITMQ_HOST)%', 'vhost': '%env(RABBITMQ_VHOST)%', 'user': '%env(RABBITMQ_USER)%', 'password': '%env(RABBITMQ_PASSWORD)%'}
+            - "@monolog.logger.worker"
+
+    app.rabbitmq.receiver.request:
+        class: App\Messenger\Receiver\RabbitMQReceiver
+        arguments:
+            - "@app.rabbitmq.connection"
+            - "@app.rabbitmq.producer.response"
+            - "@monolog.logger.worker"
+            - "request"
+            - "@app.messenger.message_bus"
+
+    app.rabbitmq.receiver.try_again_message:
+        class: App\Messenger\Receiver\RabbitMQReceiver
+        arguments:
+            - "@app.rabbitmq.connection"
+            - "@app.rabbitmq.producer.response"
+            - "@monolog.logger.worker"
+            - "try_again_messages"
+            - "@app.messenger.message_bus"
+
+    app.rabbitmq.producer.response:
+        class: App\RabbitMQ\RabbitMQProducer
+        arguments:
+            - "@app.rabbitmq.connection"
+            - "@monolog.logger.worker"
+            - "response"
+
+    app.rabbitmq.producer.try_again:
+        class: App\RabbitMQ\RabbitMQProducer
+        arguments:
+            - "@app.rabbitmq.connection"
+            - "@monolog.logger.worker"
+            - "try_again_messages.dlx"

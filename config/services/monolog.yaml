@@ -1,0 +1,6 @@
+services:
+    monolog.handler.async_stream:
+        class: App\Monolog\Handler\AsyncStreamHandler
+        arguments:
+            - "@app.loop"
+            - "%kernel.logs_dir%/%kernel.environment%.log"

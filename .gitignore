@@ -1,0 +1,18 @@
+###> ide ###
+.idea
+###< ide ###
+
+###> symfony/framework-bundle ###
+/.env
+/public/bundles/
+/var/
+/vendor/
+###< symfony/framework-bundle ###
+
+###> phpunit/phpunit ###
+/phpunit.xml
+###< phpunit/phpunit ###
+
+###> php-cs-fixer/cache ###
+.php_cs.cache
+###< php-cs-fixer/cache ###

@@ -1,0 +1,31 @@
+version: '3'
+services:
+    rabbitmq:
+        build:
+            context: ./docker/rabbitmq
+        restart: always
+        volumes:
+          - rabbitmq-data:/var/lib/rabbitmq
+
+    postgre:
+        build:
+          context: ./docker/postgre
+        restart: always
+        volumes:
+          - db-data:/var/lib/postgresql/data
+        environment:
+          POSTGRES_USER: ${DB_USER}
+          POSTGRES_PASS: ${DB_PASSWORD}
+
+    application:
+        build:
+            context: .
+            dockerfile: docker/application-develop/Dockerfile
+        volumes:
+          - ./:/opt/application
+        env_file:
+          - .env
+
+volumes:
+  db-data:
+  rabbitmq-data:

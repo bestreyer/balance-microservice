@@ -1,0 +1,69 @@
+# This file is the entry point to configure your own services.
+# Files in the packages/ subdirectory configure your dependencies.
+
+# Put parameters here that don't need to change on each machine where the app is deployed
+# https://symfony.com/doc/current/best_practices/configuration.html#application-related-configuration
+
+services:
+    # default configuration for services in *this* file
+    _defaults:
+        autowire: false      # Automatically injects dependencies in your services.
+        autoconfigure: false # Automatically registers your services as commands, event subscribers, etc.
+        public: false       # Allows optimizing the container by removing unused services; this also means
+                            # fetching services directly from the container via $container->get() won't work.
+                            # The best practice is to be explicit about your dependencies anyway.
+
+    app.loop:
+        class: React\EventLoop\LoopInterface
+        factory: ['React\EventLoop\Factory', create]
+
+    app.stdio:
+        class: Clue\React\Stdio\Stdio
+        arguments:
+            - "@app.loop"
+
+    app.connector.factory:
+        class: App\Connector\Factory\ConnectorFactory
+        arguments:
+            - "@app.loop"
+            - "%env(DNS_RESOLVER_IP)%"
+
+    app.connector:
+        class: React\Socket\Connector
+        factory: 'app.connector.factory:create'
+
+    app.db.pgasync_client:
+        class: PgAsync\Client
+        arguments:
+            -
+                host: "%env(DB_HOST)%"
+                user: "%env(DB_USER)%"
+                password: "%env(DB_PASSWORD)%"
+                database: "%env(DB_NAME)%"
+            - "@app.loop"
+            - "@app.connector"
+
+    app.db.client:
+        class: App\Postgre\Client
+        arguments:
+            - "@app.db.pgasync_client"
+
+    app.command.fake_users:
+        class: App\Command\GenerateFakeAccountsCommand
+        arguments:
+            - "@app.loop"
+            - "@app.repository.balance"
+            - "@app.stdio"
+        tags:
+            - { name: "console.command" }
+
+
+    app.command.worker_start:
+        class: App\Command\WorkerStartCommand
+        arguments:
+            - "@app.loop"
+            - "@app.rabbitmq.receiver.request"
+            - "@app.rabbitmq.receiver.try_again_message"
+        tags:
+            - { name: "console.command" }
+

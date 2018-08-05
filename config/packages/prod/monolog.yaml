@@ -1,0 +1,18 @@
+monolog:
+    use_microseconds: false
+    channels: ['worker']
+    handlers:
+        socket:
+            type: service
+            id: monolog.handler.async_stream
+            level: error
+            channels: ['worker']
+
+        console:
+            type:  console
+            level: error
+            bubble: false
+            channels: ['!worker']
+            verbosity_levels:
+                VERBOSITY_VERBOSE: INFO
+                VERBOSITY_VERY_VERBOSE: DEBUG

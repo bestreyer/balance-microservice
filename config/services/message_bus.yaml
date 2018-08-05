@@ -1,0 +1,86 @@
+services:
+    app.denormalizer:
+        class: Symfony\Component\Serializer\Normalizer\ObjectNormalizer
+
+    app.message.dto.factory:
+      class: App\Message\DTO\Factory\MessageDTOFactory
+
+    app.messenger.middleware.handle_message.handle.abstract_handler:
+        class: App\Messenger\Handler\AbstractHandler
+        abstract: true
+        arguments:
+            - "@app.repository.balance_lock"
+            - "@app.repository.balance"
+
+    app.messenger.middleware.handle_message.handle.wait_confirmation_lock:
+        class: App\Messenger\Handler\WaitConfirmationLockBalanceHandler
+        parent: 'app.messenger.middleware.handle_message.handle.abstract_handler'
+
+    app.messenger.middleware.handle_message.handle.wait_confirmation_unlock:
+        class: App\Messenger\Handler\WaitConfirmationUnLockBalanceHandler
+        parent: 'app.messenger.middleware.handle_message.handle.abstract_handler'
+
+    app.messenger.middleware.handle_message.handle.disburse:
+        class: App\Messenger\Handler\DisburseHandler
+        parent: 'app.messenger.middleware.handle_message.handle.abstract_handler'
+
+    app.messenger.middleware.handle_message.handle.replenishmen:
+        class: App\Messenger\Handler\ReplenishmentHandler
+        parent: 'app.messenger.middleware.handle_message.handle.abstract_handler'
+
+    app.messenger.middleware.handle_message.handle.account_to_account_money_transfer:
+        class: App\Messenger\Handler\AccountToAccountMoneyTransferHandler
+        parent: 'app.messenger.middleware.handle_message.handle.abstract_handler'
+
+    app.messenger.middleware.handle_message.locator:
+            class: Symfony\Component\Messenger\Handler\Locator\HandlerLocator
+            arguments:
+                - "App\\Message\\DTO\\WaitConfirmationLockBalanceMessageDTO": "@app.messenger.middleware.handle_message.handle.wait_confirmation_lock"
+                  "App\\Message\\DTO\\WaitConfirmationUnlockBalanceMessageDTO": "@app.messenger.middleware.handle_message.handle.wait_confirmation_unlock"
+                  "App\\Message\\DTO\\DisburseMessageDTO": "@app.messenger.middleware.handle_message.handle.disburse"
+                  "App\\Message\\DTO\\ReplenishmentMessageDTO": "@app.messenger.middleware.handle_message.handle.replenishmen"
+                  "App\\Message\\DTO\\AccountToAccountMoneyTransferMessageDTO": "@app.messenger.middleware.handle_message.handle.account_to_account_money_transfer"
+
+    app.messenger.middleware.create_dto:
+        class: App\Messenger\Middleware\CreateDTOMiddleware
+        arguments:
+          - "@app.message.dto.factory"
+
+    app.messenger.middleware.fill_out_dto:
+        class: App\Messenger\Middleware\FillOutDTOMiddleware
+        arguments:
+            - "@app.denormalizer"
+
+    app.messenger.middleware.handle_errors:
+        class: App\Messenger\Middleware\ErrorHandleMiddleware
+        arguments:
+            - "@app.rabbitmq.producer.response"
+            - "@app.rabbitmq.producer.try_again"
+            - "@monolog.logger.worker"
+
+    app.messenger.middleware.validation:
+        class: Symfony\Component\Messenger\Middleware\ValidationMiddleware
+        arguments:
+            - "@validator"
+
+    app.messenger.middleware.account_exists_validation:
+        class: App\Messenger\Middleware\AccountExistsMiddleware
+        arguments:
+            - "@app.repository.balance"
+
+
+    app.messenger.middleware.handle_message:
+        class: Symfony\Component\Messenger\Middleware\HandleMessageMiddleware
+        arguments:
+         - "@app.messenger.middleware.handle_message.locator"
+
+    app.messenger.message_bus:
+        class: Symfony\Component\Messenger\MessageBus
+        public: true
+        arguments:
+            -  ["@app.messenger.middleware.handle_errors",
+               "@app.messenger.middleware.create_dto",
+               "@app.messenger.middleware.fill_out_dto",
+               "@app.messenger.middleware.validation",
+               "@app.messenger.middleware.account_exists_validation",
+               "@app.messenger.middleware.handle_message" ]
